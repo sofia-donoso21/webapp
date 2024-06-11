@@ -49,7 +49,7 @@ def index():
                     session['profile']='Beneficiario'
                 else:
                     session['profile']='Auspiciador'
-                return render_template('index.html', username=session.get('name'), profileName=session['profile'], profileID=session['profile_id'])
+                return render_template('index.html', username=session['name'], profileName=session['profile'], profileID=session['profile_id'])
         except Exception as e:
             if 'connection' in locals():
                 connection.rollback()
