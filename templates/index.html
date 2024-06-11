@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,10 +10,7 @@
   <link rel="stylesheet" href="../static/styles.css">
   <title>Dashboard - {{ profileName }}</title>
 </head>
-
 <body>
-
-
   {% if profileID == 1 or profileID == "1" %}
   <!-- Menu -->
   <nav class="navbar navbar-expand-lg bg-light">
@@ -162,24 +158,11 @@
       $('#loading-spinner').hide();
       $('#project-table-body').html('<tr><td colspan="6" class="text-center text-danger">No hay listas de deseos activas.</td></tr>');
     });
-
-    // Mostrar alertas basadas en el código de respuesta
-    // console.log("Code: ", code)
-    // if (code === 200) {
-    //     alert('Operación exitosa: Lista creada correctamente.');
-    // } else{
-    //     alert('Error al crear la lista: ', message_template);
-    // }
   });
 </script>
 <script>
   function editProject(id) {
     window.location.href = '/wishes?idProject=' + id;
   }
-
-  // function deleteProject(id) {
-  //   window.location.href = '/wishes?idProject=' + id;
-  // }
 </script>
-
 </html>
