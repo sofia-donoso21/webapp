@@ -150,6 +150,24 @@ def user():
 def projects():
     userid = session.get('user_id')
     if not userid:
+        return jsonify({"message": "Usuario no autenticado"}), 401  # Unauthorized
+    try:
+        connection = funciones.get_db_connection()
+        with connection.cursor() as cursor:
+            cursor.callproc('GET_PROYECTOS_BY_USERID', (userid,))
+            data = cursor.fetchall()
+            if not data:
+                return jsonify({"message": "No hay proyectos disponibles"}), 404  # Not Found
+            return jsonify(data), 200  # OK
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500  # Internal Server Error
+    finally:
+        if 'connection' in locals():
+            connection.close()
+"""@app.route('/projects', methods=['GET', 'POST'])
+def projects():
+    userid = session.get('user_id')
+    if not userid:
         return render_template('login.html')
     try:
         connection = funciones.get_db_connection()
@@ -165,7 +183,7 @@ def projects():
         return jsonify({"error": str(e)}), 200
     finally:
         if 'connection' in locals():
-            connection.close()
+            connection.close()"""
 
 @app.route('/deleteProject', methods=['GET', 'POST'])
 def deleteProject():
