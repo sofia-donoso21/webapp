@@ -6,9 +6,8 @@ import hashlib
 import pymysql.cursors
 
 app = Flask(__name__)
-app.secret_key = 'mi_clave_secreta'
-
-
+CORS(app)
+app.secret_key = '1vOyzSxolp8Gp0wxUw6aDEpI8oWHKukZO0CIVesgawgqmgC1QeXKvGERymfzUItr'
 
 class funciones:
     def config():
@@ -35,8 +34,6 @@ class funciones:
         sha256_hash.update(string_bytes)
         hash_encriptado = sha256_hash.hexdigest()
         return hash_encriptado
-
-
 
 @app.route('/')
 def index():
@@ -263,7 +260,6 @@ def addWish():
     finally:
         if 'connection' in locals():
             connection.close()
-
 
 
 if __name__ == '__main__':
