@@ -7,7 +7,6 @@ import pymysql.cursors
 
 app = Flask(__name__)
 CORS(app)
-app.secret_key = '1vOyzSxolp8Gp0wxUw6aDEpI8oWHKukZO0CIVesgawgqmgC1QeXKvGERymfzUItr'
 
 class funciones:
     def config():
