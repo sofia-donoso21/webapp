@@ -1,8 +1,41 @@
+from collections import OrderedDict
+from dotenv import load_dotenv, dotenv_values
 from flask import Flask, render_template, request, redirect, session, jsonify
-from module import funciones
-
+from mysql.connector.cursor import MySQLCursorDict
+import hashlib
+import pymysql.cursors
 
 app = Flask(__name__)
+app.secret_key = 'mi_clave_secreta'
+
+
+
+class funciones:
+    def config():
+        app.config['DEBUG'] = False
+        app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
+        app.run(debug=app.config['DEBUG'])
+
+    def get_db_connection():
+        load_dotenv()
+        env_vars = dotenv_values()
+        env = OrderedDict(env_vars)
+        return pymysql.connect(
+            host=env['HOST'],
+            user=env['USERNAME'],
+            password=env['PASSWORD'],
+            database=env['DB'],
+            cursorclass=pymysql.cursors.DictCursor,
+            ssl_ca=env['SSL_CERT']
+        )
+
+    def encryptSHA256(code):
+        string_bytes = code.encode('utf-8')
+        sha256_hash = hashlib.sha256()
+        sha256_hash.update(string_bytes)
+        hash_encriptado = sha256_hash.hexdigest()
+        return hash_encriptado
+
 
 
 @app.route('/')
@@ -109,6 +142,7 @@ def user():
             cursor.execute("SELECT @_CREATE_USER_7 AS code, @_CREATE_USER_8 AS message")
             return render_template('login.html')
     except Exception as e:
+            print("Error: ", e)
             if 'connection' in locals():
                 connection.rollback()
             return render_template('auth-gen.html', alert_message='Ocurrio un error al autentificar al usuario. Intente mas tarde.')
@@ -222,6 +256,7 @@ def addWish():
             message=result['_MESS']
             return render_template('wish.html', username=session.get('name'), profileName=session['profile'], profileID=session['profile_id'], statuscode=code, statusmessage=message)
     except Exception as e:
+        print(e)
         if 'connection' in locals():
             connection.rollback()
         return render_template('wish.html', username=session.get('name'), profileName=session['profile'], profileID=session['profile_id'])
