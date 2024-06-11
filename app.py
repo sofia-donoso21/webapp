@@ -1,9 +1,9 @@
 from collections import OrderedDict
 from dotenv import load_dotenv, dotenv_values
 from flask import Flask, render_template, request, redirect, session, jsonify
-from mysql.connector.cursor import MySQLCursorDict
 import hashlib
 import pymysql.cursors
+from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app)
@@ -57,6 +57,7 @@ def index():
         finally:
             if 'connection' in locals():
                 connection.close() 
+    return render_template('login.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
