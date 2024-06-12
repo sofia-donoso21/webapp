@@ -18,13 +18,18 @@
           <div>
             <div class="messages"></div>
           </div>
-          <span class="login100-form-title p-b-49">Login</span>
 
           {% if alert_message %}
-          <div id="alert" class="toast">{{ alert_message }}</div>
+          <div style="background-color: #FF5733; border-color: #333333; border-radius: 15px; padding: 15px;"> 
+            {{ alert_message }} 
+          </div>
+          {% else %}
+          <span class="login100-form-title p-b-49">
+            ¡Hola de nuevo!
+          </span>
           {% endif %}
 
-          <div class="wrap-input100 m-b-23">
+          <div class="wrap-input100 m-b-23 m-t-23">
             <span class="label-input100">Correo</span>
             <input class="input100" type="email" name="email" placeholder="example@domain.com" required>
             <span class="focus-input100"></span>
