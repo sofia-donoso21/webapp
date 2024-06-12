@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +9,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
   <link rel="stylesheet" href="../static/styles.css">
 </head>
+
 <body>
   <div class="limiter">
     <div class="container-login100" style="background-image: url(../static/img/bg-01.jpg);">
@@ -16,8 +18,9 @@
           <div>
             <div class="messages"></div>
           </div>
+
           {% if alert_message %}
-          <div style="background-color: #FF5733; border-color: #333333; border-radius: 15px; padding: 15px;"> 
+          <div class="bg-danger text-center" style="border-radius: 15px; padding: 15px; color: #fff;"> 
             {{ alert_message }} 
           </div>
           {% else %}
@@ -25,26 +28,31 @@
             ¡Hola de nuevo!
           </span>
           {% endif %}
+
           <div class="wrap-input100 m-b-23 m-t-23">
             <span class="label-input100">Correo</span>
             <input class="input100" type="email" name="email" placeholder="example@domain.com" required>
             <span class="focus-input100"></span>
           </div>
+
           <div class="wrap-input100">
             <span class="label-input100">Contraseña</span>
             <input class="input100" type="password" name="password" placeholder="Ingrese su contraseña" required>
             <span class="focus-input100"></span>
           </div>
+
           <div>
             <input type="checkbox" id="togglePasswordCheckbox">
             Mostrar contraseña
           </div>
+
           <div class="flex-col-c p-t-30 container-login100-form-btn">
             <div class="wrap-login100-form-btn">
               <div class="login100-form-bgbtn"></div>
               <button class="login100-form-btn" id="miBoton" name="miBoton" type="submit">ACCEDER</button>
             </div>
           </div>
+
           <div class="flex-col-c p-t-30">
             <span class="txt1 p-b-10">¿No tienes cuenta?</span>
             <a href="/register" class="txt2">Crear una aquí</a>
@@ -57,6 +65,7 @@
     function disableButton() {
       document.getElementById("miBoton").disabled = true;
     }
+
     window.onload = function () {
       var togglePasswordCheckbox = document.getElementById("togglePasswordCheckbox");
       var passwordInput = document.querySelector("input[name='password']");
@@ -80,4 +89,5 @@
     integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
     crossorigin="anonymous"></script>
 </body>
+
 </html>
