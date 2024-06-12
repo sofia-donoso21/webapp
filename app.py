@@ -72,7 +72,7 @@ def login():
     except Exception as e:
         if 'connection' in locals():
             connection.rollback()
-        return render_template('login.html')
+        return render_template('login.html', alert_message="Ocurrio un error al autentificar al usuario. Intente mas tarde.")
     finally:
         if 'connection' in locals():
             connection.close()
