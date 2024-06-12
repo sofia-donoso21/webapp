@@ -19,12 +19,12 @@ class funciones:
         env_vars = dotenv_values()
         env = OrderedDict(env_vars)
         return pymysql.connect(
-            host=env['HOST'],
-            user=env['USERNAME'],
-            password=env['PASSWORD'],
-            database=env['DB'],
+            host='dev-red-innova.mysql.database.azure.com',
+            user='sofiadonoso',
+            password='Sda.280899$',
+            database='dev-regala-sonrisas',
             cursorclass=pymysql.cursors.DictCursor,
-            ssl_ca=env['SSL_CERT']
+            ssl_ca='DigiCertGlobalRootCA.crt.pem'
         )
 
     def encryptSHA256(code):
