@@ -6,6 +6,7 @@ import pymysql.cursors
 from flask_cors import CORS
 
 app = Flask(__name__)
+app.secret_key = 'b1f21c5f7e90b9e6d3c3b12d916c6c82a8c0a72c97bdf8c918e3028b73cbb9a5'
 CORS(app)
 
 class funciones:
