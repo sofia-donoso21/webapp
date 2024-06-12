@@ -1,185 +1,249 @@
-<!DOCTYPE html>
-<html lang="es">
+from collections import OrderedDict
+from dotenv import load_dotenv, dotenv_values
+from flask import Flask, render_template, request, redirect, session, jsonify
+import hashlib
+import pymysql.cursors
+from flask_cors import CORS
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://getbootstrap.com/docs/5.2/assets/css/docs.css" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.0/font/bootstrap-icons.min.css"
-    rel="stylesheet">
-  <link rel="stylesheet" href="../static/styles.css">
-  <title>Dashboard - {{perfil_name}}</title>
-</head>
+app = Flask(__name__)
+CORS(app)
 
-<body>
+class funciones:
+    def config():
+        app.config['DEBUG'] = False
+        app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
+        app.run(debug=app.config['DEBUG'])
 
+    def get_db_connection():
+        load_dotenv()
+        env_vars = dotenv_values()
+        env = OrderedDict(env_vars)
+        return pymysql.connect(
+            host=env['HOST'],
+            user=env['USERNAME'],
+            password=env['PASSWORD'],
+            database=env['DB'],
+            cursorclass=pymysql.cursors.DictCursor,
+            ssl_ca=env['SSL_CERT']
+        )
 
-  {% if perfil == 1 or perfil == "1" %}
-  <!-- Menu -->
-  <nav class="navbar navbar-expand-lg bg-light">
-    <div class="container-fluid">
-      <a class="navbar-brand" href="#">Regala Sonrisas</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
-        aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarSupportedContent">
-        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-          <!-- <li class="nav-item">
-            <a class="nav-link" href="#">Galeria</a>
-          </li> -->
-          <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-              Configuracion
-            </a>
-            <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="#">Usuario</a></li>
-              <li><a class="dropdown-item" href="#">Mercado Libre</a></li>
-              <li>
-                <hr class="dropdown-divider">
-              </li>
-              <li><a class="dropdown-item" href="/logout">Salir</a></li>
-            </ul>
-          </li>
-        </ul>
-        <form class="d-flex" method="post" action="/logout">
-          <div id="radix-:rh0:" aria-haspopup="menu" aria-expanded="false" data-state="closed"
-            class="group flex cursor-pointer items-center gap-1 rounded-xl py-2 px-3 text-lg font-semibold hover:bg-token-main-surface-secondary radix-state-open:bg-token-main-surface-secondary juice:text-token-text-secondary juice:rounded-lg juice:py-1.5 overflow-hidden whitespace-nowrap">
-            <div class="juice:text-token-text-secondary"><span class="text-token-text-secondary">{{username}}</span>
-            </div>
-          </div>
-          <button type="submit" class="btn btn-outline-danger">Salir
-            <i class="bi bi-box-arrow-right"></i></button>
-        </form>
-      </div>
-    </div>
-  </nav>
+    def encryptSHA256(code):
+        string_bytes = code.encode('utf-8')
+        sha256_hash = hashlib.sha256()
+        sha256_hash.update(string_bytes)
+        hash_encriptado = sha256_hash.hexdigest()
+        return hash_encriptado
 
-  <form id="useridForm" action="/projects" method="POST">
-    <input type="hidden" name="userid" id="userid" value="{{ userid }}">
-  </form>
+@app.route('/')
+def index():
+    return render_template('login.html')
 
 
-  <!-- Formulario -->
-  <div class="p-1">
-    <form class="login100-form" method="post" action="/addProject">
-      <div class="container mt-5">
-        {% if message_template %}
-        <div class="bg-danger text-center text-white" style="border-radius: 15px; padding: 15px;">
-          {{ message_template }}
-        </div>
-        {% else %}
-        <span class="login100-form-title p-b-49">
-          Lista de deseos
-        </span>
-        {% endif %}
-        <div class="row m-b-23 m-t-23">
-          <div class="col-6 col-md-6 mb-6">
+@app.route('/logout', methods=['GET', 'POST'])
+def logout():
+    session.clear()
+    return render_template('login.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    email = request.form['email']
+    password = funciones.encryptSHA256(request.form['password'])
+    try:
+        connection = funciones.get_db_connection()
+        connection.begin()
+        with connection.cursor() as cursor:
+            cursor.callproc('AUTH_MAIN_VALID', (email, password, 0, '', ''))
+            cursor.execute("SELECT @_AUTH_MAIN_VALID_2 AS code, @_AUTH_MAIN_VALID_3 AS message, @_AUTH_MAIN_VALID_4 AS userid")
+            result_main_valid = cursor.fetchone()
+            code = result_main_valid['code']
+            message = result_main_valid['message']
+            userid=result_main_valid['userid']
+            if code == 200:
+                session['email'] = email
+                cursor.execute(f"SELECT perfil, rut, CONCAT(nombres,' ', ap_pat, ' ', ap_mat) username, CASE perfil WHEN 1 THEN 'Beneficiario' WHEN 2 THEN 'Auspiciador' ELSE '' END  perfil_name FROM usuario WHERE id={userid}")
+                query = cursor.fetchone()
+                perfil=query['perfil']
+                perfil_name=query['perfil_name']
+                rut=query['rut']
+                username=query['username']
+                return render_template('index.html', userid=userid, perfil=perfil, perfil_name=perfil_name, rut=rut, username=username) 
+            else:
+                return render_template('login.html', alert_message=message)
+    except Exception as e:
+        if 'connection' in locals():
+            connection.rollback()
+        return render_template('login.html', alert_message="Ocurrio un error al autentificar al usuario. Intente mas tarde.")
+    finally:
+        if 'connection' in locals():
+            connection.close()
+
+
+@app.route('/projects', methods=['GET', 'POST'])
+def projects():
+    userid = request.form.get('userid')
+    print("User id: ", userid)
+    if not userid:
+        print("Usuario no autentificado")
+        return jsonify({"message": "Usuario no autenticado"}), 401  # Unauthorized
+    try:
+        connection = funciones.get_db_connection()
+        with connection.cursor() as cursor:
+            cursor.callproc('GET_PROYECTOS_BY_USERID', (userid,))
+            data = cursor.fetchall()
+            print("Python data: ", data)
+            if not data:
+                return jsonify({"message": "No hay proyectos disponibles"}), 404  # Not Found
+            return jsonify(data), 200  # OK
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500  # Internal Server Error
+    finally:
+        if 'connection' in locals():
+            connection.close()
+
+@app.route('/register', methods=['GET', 'POST'])
+def register(): 
+    return render_template('register.html')
+
+@app.route('/validate', methods=['GET', 'POST'])
+def registerPage(): 
+    rut = request.form['rut']
+    name = request.form['name']
+    app1 = request.form['app1']
+    app2 = request.form['app2']
+    profile = request.form['profile']
+    profile_id = int(profile)
+    if not rut or not name or not app1 or not app2 or profile_id == 0:
+        return render_template('register.html', message="Faltan datos por completar")
+    datos_usuario = {
+    'rut': rut,
+    'name': name,
+    'app1': app1,
+    'app2': app2,
+    'profile': profile,
+    'username': str(f"{name} {app1} {app2}") 
+    }
+    session['dataUser'] = datos_usuario
+    return render_template('auth-gen.html', data=datos_usuario)
+
+@app.route('/user', methods=['GET', 'POST'])
+def user(): 
+    email = request.form['email']
+    psw = funciones.encryptSHA256(request.form['password'])
+    if not email or not psw:
+        return render_template('auth-gen.html', message="Faltan datos por completar")
+    try:
+        connection = funciones.get_db_connection()
+        connection.begin()
+        rut = session.get('dataUser', {}).get('rut')
+        name = session.get('dataUser', {}).get('name')
+        app1 = session.get('dataUser', {}).get('app1')
+        app2 = session.get('dataUser', {}).get('app2')
+        profile = session.get('dataUser', {}).get('profile')
+        with connection.cursor() as cursor:
+            cursor.callproc('CREATE_USER', (rut, email, psw, name, app1, app2, profile, 0, ''))
+            cursor.execute("SELECT @_CREATE_USER_7 AS code, @_CREATE_USER_8 AS message")
+            return render_template('login.html')
+    except Exception as e:
+            print("Error: ", e)
+            if 'connection' in locals():
+                connection.rollback()
+            return render_template('auth-gen.html', alert_message='Ocurrio un error al autentificar al usuario. Intente mas tarde.')
+    finally:
+        if 'connection' in locals():
+            connection.close()
+
+@app.route('/deleteProject', methods=['GET', 'POST'])
+def deleteProject():
+    idProject = request.form['idProject']
+    try:
+        connection = funciones.get_db_connection()
+        connection.begin()
+        with connection.cursor() as cursor:
+            cursor.execute(f"UPDATE proyecto SET estado='1' WHERE id={idProject}")
+            connection.commit()
+            return redirect('/')
+    except Exception as e:
+        if 'connection' in locals():
+            connection.rollback()
+        return redirect('/')
+    finally:
+        if 'connection' in locals():
+            connection.close()
+
+@app.route('/addProject', methods=['GET', 'POST'])
+def addProject():
+    userid = session.get('user_id')
+    name = request.form['name']
+    descripcion = request.form['descripcion']
+    try:
+        connection = funciones.get_db_connection()
+        connection.begin()
+        with connection.cursor() as cursor: 
+            cursor.callproc('SET_PROYECTO', (userid, name, descripcion, 0, ''))
+            cursor.execute("SELECT @_SET_PROYECTO_3 AS code, @_SET_PROYECTO_4 AS message")
+            result = cursor.fetchone()
+            code = result['code']
+            message = result['message']
+            if code == 200:
+                return redirect('/')
+    except Exception as e:
+        if 'connection' in locals():
+            connection.rollback()
+        return redirect('/')
+    finally:
+        if 'connection' in locals():
+            connection.close()
+
+@app.route('/wishes', methods=['GET', 'POST'])
+def wishes():
+    idProject = request.args["idProject"]
+    session['idProject']=idProject
+    return render_template("wish.html", username=session.get('name'), profileName=session['profile'], profileID=session['profile_id'])
+
+@app.route('/validateWishes', methods=['GET', 'POST'])
+def validateWishes():
+    idProject = session['idProject']
+    if not idProject:
+        return redirect('/')
+    try:
+        connection = funciones.get_db_connection()
+        with connection.cursor() as cursor:
+            cursor.execute(f'SELECT A.id, CONCAT(B.nombres, " ", B.ap_pat, " ", B.ap_mat) usuario, A.nombre, A.detalle FROM deseo A LEFT JOIN usuario B ON A.id_usuario=B.id WHERE A.id_proyecto={idProject}')
+            data = cursor.fetchall()
+            if not data:
+                return jsonify({"message": "No hay deseos disponibles"}), 400
+            return jsonify(data), 200  # OK
+    except Exception as e:
+        if 'connection' in locals():
+            connection.rollback()
+        return jsonify({"error": str(e)}), 200
+    finally:
+        if 'connection' in locals():
+            connection.close()
+
+@app.route('/addWish', methods=['GET', 'POST'])
+def addWish():
+    idProject= session.get('idProject')
+    userid = session.get('user_id')
+    name= request.form['name']
+    detail=request.form['detail']
+    try:
+        connection = funciones.get_db_connection()
+        connection.begin()
+        with connection.cursor() as cursor:
+            cursor.callproc('SET_DESEO', (userid, idProject, name, detail, 0, ''))
+            result = cursor.fetchone()
+            code=result['_CODE']
+            message=result['_MESS']
+            return render_template('wish.html', username=session.get('name'), profileName=session['profile'], profileID=session['profile_id'], statuscode=code, statusmessage=message)
+    except Exception as e:
+        print(e)
+        if 'connection' in locals():
+            connection.rollback()
+        return render_template('wish.html', username=session.get('name'), profileName=session['profile'], profileID=session['profile_id'])
+    finally:
+        if 'connection' in locals():
+            connection.close()
             
-            <div class="wrap-input100">
-              <span class="label-input100">Nombre</span>
-              <input class="input100" type="text" name="name" required>
-              <span class="focus-input100"></span>
-            </div>
-            <div class="wrap-input100">
-              <span class="label-input100">Responsable</span>
-              <input class="input100" type="text" name="text" required value="{{username}}" readonly>
-              <span class="focus-input100"></span>
-            </div>
-          </div>
-          <div class="col-6 col-md-6 mb-6">
-            <div class="wrap-input100">
-              <span class="label-input100">Descripcion (opcional)</span>
-              <textarea class="input100" name="descripcion" id="descripcion"></textarea>
-              <span class="focus-input100"></span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="text-center p-t-30">
-        <button type="submit" class="btn btn-outline-danger "> AGREGAR</button>
-      </div>
-    </form>
-  </div>
-  <hr>
-  <!-- Tabla -->
-  <div class="p-l-15 p-r-15">
-    <table id="mytable" class="table table-bordered table-striped">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Responsable</th>
-          <th>Nombre</th>
-          <th>Detalle</th>
-          <th>Fecha</th>
-          <!-- <th>Porcentaje</th> -->
-          <th>Accion</th>
-        </tr>
-      </thead>
-      <tbody id="project-table-body">
-      </tbody>
-    </table>
-    <!-- Spinner de carga -->
-    <div id="loading-spinner" class="text-center">
-      <span>Cargando...</span>
-      <div class="spinner-border" role="status">
-      </div>
-    </div>
-  </div>
-  {% else %}
-  <span class="login100-form-title p-b-49">
-    perfil_name
-  </span>
-  {% endif %}
-</body>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
-  $(document).ready(function () {
-    $('#loading-spinner').show();
-    
-    // Obtén el valor de userid
-    var userid = $('#userid').val(); 
-    
-    // Envía la solicitud al servidor
-    $.ajax({
-        url: '/projects',
-        type: 'POST',
-        data: { userid: userid }, // Envía el valor de userid al servidor
-        success: function(data) {
-            $('#loading-spinner').hide();
-            console.log(data); // Añade este log para verificar los datos recibidos
-            if (Array.isArray(data)) {
-                var tbody = $('#project-table-body');
-                tbody.empty();
-                data.forEach(function (project) {
-                    var row = `<tr>
-                        <td>${project.id}</td>
-                        <td>${project.usuario}</td>
-                        <td>${project.nombre}</td>
-                        <td>${project.descripcion}</td>
-                        <td>${project.fechacreaformat}</td>
-                        <td>
-                            <form class="d-flex" method="post">
-                                <input type="hidden" name="idProject" value="${project.id}">
-                                <button type="submit" class="btn btn-outline-primary me-3">Editar
-                                    <i class="bi bi-pencil-square"></i></button>
-                                <button type="submit" class="btn btn-outline-danger">Eliminar
-                                    <i class="bi bi-trash-fill"></i></button>
-                            </form>
-                        </td>
-                    </tr>`;
-                    tbody.append(row);
-                });
-            } else {
-                console.error("La respuesta no es un array:", data);
-            }
-        },
-        error: function(xhr, status, error) {
-            $('#loading-spinner').hide();
-            console.error("Error al obtener los datos:", error);
-        }
-    });
-});
-</script>
-</html>
+if __name__ == '__main__':
+    funciones.config()
