@@ -35,11 +35,30 @@ class funciones:
         hash_encriptado = sha256_hash.hexdigest()
         return hash_encriptado
 
+####################################################################################################################
+######################################################## OK
+####################################################################################################################
 @app.route('/')
 def index():
+    if 'email' in session:
+        connection = funciones.get_db_connection()
+        connection.begin()
+        with connection.cursor() as cursor:
+            userid=session.get('userid')
+            print("userid: ", userid)
+            cursor.execute(f"SELECT perfil, rut, CONCAT(nombres,' ', ap_pat, ' ', ap_mat) username, CASE perfil WHEN 1 THEN 'Beneficiario' WHEN 2 THEN 'Auspiciador' ELSE '' END  perfil_name FROM usuario WHERE id={userid}")
+            query = cursor.fetchone()
+            perfil=query['perfil']
+            perfil_name=query['perfil_name']
+            rut=query['rut']
+            username=query['username']
+            session['name']=username
+            session['profile_id']=perfil
+            session['profile']=perfil_name
+        return render_template('index.html', userid=userid, perfil=perfil, perfil_name=perfil_name, rut=rut, username=username) 
     return render_template('login.html')
-
-
+    
+    
 @app.route('/logout', methods=['GET', 'POST'])
 def logout():
     session.clear()
@@ -61,13 +80,14 @@ def login():
             userid=result_main_valid['userid']
             if code == 200:
                 session['email'] = email
+                session['userid'] = userid
                 cursor.execute(f"SELECT perfil, rut, CONCAT(nombres,' ', ap_pat, ' ', ap_mat) username, CASE perfil WHEN 1 THEN 'Beneficiario' WHEN 2 THEN 'Auspiciador' ELSE '' END  perfil_name FROM usuario WHERE id={userid}")
                 query = cursor.fetchone()
                 perfil=query['perfil']
                 perfil_name=query['perfil_name']
                 rut=query['rut']
                 username=query['username']
-                return render_template('index.html', userid=userid, perfil=perfil, perfil_name=perfil_name, rut=rut, username=username) 
+                return redirect('/')
             else:
                 return render_template('login.html', alert_message=message)
     except Exception as e:
@@ -81,8 +101,7 @@ def login():
 
 @app.route('/projects', methods=['GET', 'POST'])
 def projects():
-    userid = request.form.get('userid')
-    print("User id: ", userid)
+    userid = session.get('userid')
     if not userid:
         print("Usuario no autentificado")
         return jsonify({"message": "Usuario no autenticado"}), 401  # Unauthorized
@@ -93,10 +112,10 @@ def projects():
             data = cursor.fetchall()
             print("Python data: ", data)
             if not data:
-                return jsonify({"message": "No hay proyectos disponibles"}), 404  # Not Found
-            return jsonify(data), 200  # OK
+                return jsonify({"message": "No hay proyectos disponibles"}), 404
+            return jsonify(data), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500  # Internal Server Error
+        return jsonify({"error": str(e)}), 500
     finally:
         if 'connection' in locals():
             connection.close()
@@ -104,6 +123,70 @@ def projects():
 @app.route('/register', methods=['GET', 'POST'])
 def register(): 
     return render_template('register.html')
+
+
+@app.route('/wishes', methods=['GET', 'POST'])
+def wishes():
+    idProject = request.args["idProject"]
+    session['idProject']=idProject
+    return render_template("wish.html", username=session.get('name'), profileName=session.get('profile'), profileID=session.get('profile_id'))
+
+
+@app.route('/addProject', methods=['GET', 'POST'])
+def addProject():
+    userid = session.get('userid')
+    name = request.form['name']
+    descripcion = request.form['descripcion']
+    print("Userid: ", userid)
+    try:
+        connection = funciones.get_db_connection()
+        connection.begin()
+        with connection.cursor() as cursor: 
+            cursor.callproc('SET_PROYECTO', (userid, name, descripcion, 0, ''))
+            cursor.execute("SELECT @_SET_PROYECTO_3 AS code, @_SET_PROYECTO_4 AS message")
+            result = cursor.fetchone()
+            code = result['code']
+            message = result['message']
+            print("Add project message: ", message)
+            if code == 200:
+                return redirect('/')
+    except Exception as e:
+        if 'connection' in locals():
+            connection.rollback()
+        return redirect('/')
+    finally:
+        if 'connection' in locals():
+            connection.close()
+
+####################################################################################################################
+######################################################## NO OK
+####################################################################################################################
+
+@app.route('/validateWishes', methods=['GET', 'POST'])
+def validateWishes():
+    idProject = session.get('idProject')
+    print("idProject Validate wishes: ", idProject)
+    if not idProject:
+        return redirect('/')
+    try:
+        connection = funciones.get_db_connection()
+        with connection.cursor() as cursor:
+            cursor.execute(f'SELECT A.id, CONCAT(B.nombres, " ", B.ap_pat, " ", B.ap_mat) usuario, A.nombre, A.detalle FROM deseo A LEFT JOIN usuario B ON A.id_usuario=B.id WHERE A.id_proyecto={idProject}')
+            data = cursor.fetchall()
+            print("Data wishes", data)
+            if not data:
+                return jsonify({"message": "No hay deseos disponibles"}), 400
+            return jsonify(data), 200  # OK
+    except Exception as e:
+        print("Except validate wishes: ", e)
+        if 'connection' in locals():
+            connection.rollback()
+        return jsonify({"error": str(e)}), 200
+    finally:
+        if 'connection' in locals():
+            connection.close()
+
+
 
 @app.route('/validate', methods=['GET', 'POST'])
 def registerPage(): 
@@ -171,56 +254,10 @@ def deleteProject():
         if 'connection' in locals():
             connection.close()
 
-@app.route('/addProject', methods=['GET', 'POST'])
-def addProject():
-    userid = session.get('user_id')
-    name = request.form['name']
-    descripcion = request.form['descripcion']
-    try:
-        connection = funciones.get_db_connection()
-        connection.begin()
-        with connection.cursor() as cursor: 
-            cursor.callproc('SET_PROYECTO', (userid, name, descripcion, 0, ''))
-            cursor.execute("SELECT @_SET_PROYECTO_3 AS code, @_SET_PROYECTO_4 AS message")
-            result = cursor.fetchone()
-            code = result['code']
-            message = result['message']
-            if code == 200:
-                return redirect('/')
-    except Exception as e:
-        if 'connection' in locals():
-            connection.rollback()
-        return redirect('/')
-    finally:
-        if 'connection' in locals():
-            connection.close()
 
-@app.route('/wishes', methods=['GET', 'POST'])
-def wishes():
-    idProject = request.args["idProject"]
-    session['idProject']=idProject
-    return render_template("wish.html", username=session.get('name'), profileName=session['profile'], profileID=session['profile_id'])
 
-@app.route('/validateWishes', methods=['GET', 'POST'])
-def validateWishes():
-    idProject = session['idProject']
-    if not idProject:
-        return redirect('/')
-    try:
-        connection = funciones.get_db_connection()
-        with connection.cursor() as cursor:
-            cursor.execute(f'SELECT A.id, CONCAT(B.nombres, " ", B.ap_pat, " ", B.ap_mat) usuario, A.nombre, A.detalle FROM deseo A LEFT JOIN usuario B ON A.id_usuario=B.id WHERE A.id_proyecto={idProject}')
-            data = cursor.fetchall()
-            if not data:
-                return jsonify({"message": "No hay deseos disponibles"}), 400
-            return jsonify(data), 200  # OK
-    except Exception as e:
-        if 'connection' in locals():
-            connection.rollback()
-        return jsonify({"error": str(e)}), 200
-    finally:
-        if 'connection' in locals():
-            connection.close()
+
+
 
 @app.route('/addWish', methods=['GET', 'POST'])
 def addWish():
