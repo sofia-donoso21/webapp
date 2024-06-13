@@ -76,7 +76,7 @@
         {% endif %}
         <div class="row m-b-23 m-t-23">
           <div class="col-6 col-md-6 mb-6">
-            
+
             <div class="wrap-input100">
               <span class="label-input100">Nombre</span>
               <input class="input100" type="text" name="name" required>
@@ -133,27 +133,147 @@
   </span>
   {% endif %}
 </body>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-  $(document).ready(function () {
-    $('#loading-spinner').show();
-    
+  document.addEventListener("DOMContentLoaded", function () {
+    var loadingSpinner = document.getElementById("loading-spinner");
+    loadingSpinner.style.display = "block";
+
+    // Envía la solicitud al servidor
+    fetch('/projects', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+    })
+      .then(response => response.json())
+      .then(data => {
+        loadingSpinner.style.display = "none";
+        console.log(data); // Añade este log para verificar los datos recibidos
+        if (Array.isArray(data)) {
+          var tbody = document.getElementById("project-table-body");
+          tbody.innerHTML = '';
+          data.forEach(function (project) {
+            var row = document.createElement("tr");
+            row.innerHTML = `
+            <td>${project.id}</td>
+            <td>${project.usuario}</td>
+            <td>${project.nombre}</td>
+            <td>${project.descripcion}</td>
+            <td>${project.fechacreaformat}</td>
+            <td>
+              <form class="d-flex" method="post">
+                <input type="hidden" name="idProject" value="${project.id}">
+                <button type="button" class="btn btn-outline-primary me-3" onclick="editProject(${project.id})">Editar
+                  <i class="bi bi-pencil-square"></i></button>
+                <button type="submit" class="btn btn-outline-danger">Eliminar
+                  <i class="bi bi-trash-fill"></i></button>
+              </form>
+            </td>`;
+            tbody.appendChild(row);
+          });
+        } else {
+          console.error("La respuesta no es un array:", data);
+          var tbody = document.getElementById("project-table-body");
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">No hay listas de deseos activas.</td></tr>';
+        }
+      })
+      .catch(error => {
+        loadingSpinner.style.display = "none";
+        console.error("Error al obtener los datos:", error);
+        var tbody = document.getElementById("project-table-body");
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">No hay listas de deseos activas.</td></tr>';
+      });
+  });
+
+  function editProject(id) {
+    window.location.href = '/wishes?idProject=' + id;
+    console.log("Id project: ", id)
+  }
+</script>
+<!-- <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var loadingSpinner = document.getElementById("loading-spinner");
+    loadingSpinner.style.display = "block";
+
     // Obtén el valor de userid
-    var userid = $('#userid').val(); 
-    
+    var userid = document.getElementById("userid").value;
+
+    // Envía la solicitud al servidor
+    fetch('/projects', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ userid: userid }) // Envía el valor de userid al servidor
+    })
+    .then(response => response.json())
+    .then(data => {
+      loadingSpinner.style.display = "none";
+      console.log(data); // Añade este log para verificar los datos recibidos
+      if (Array.isArray(data)) {
+        var tbody = document.getElementById("project-table-body");
+        tbody.innerHTML = '';
+        data.forEach(function (project) {
+          var row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${project.id}</td>
+            <td>${project.usuario}</td>
+            <td>${project.nombre}</td>
+            <td>${project.descripcion}</td>
+            <td>${project.fechacreaformat}</td>
+            <td>
+              <form class="d-flex" method="post">
+                <input type="hidden" name="idProject" value="${project.id}">
+                <button type="submit" class="btn btn-outline-primary me-3" onclick="editProject()">Editar
+                  <i class="bi bi-pencil-square"></i></button>
+                <button type="submit" class="btn btn-outline-danger">Eliminar
+                  <i class="bi bi-trash-fill"></i></button>
+              </form>
+            </td>`;
+          tbody.appendChild(row);
+        });
+      } else {
+        console.error("La respuesta no es un array:", data);
+        var tbody = document.getElementById("project-table-body");
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">No hay listas de deseos activas.</td></tr>';
+      }
+    })
+    .catch(error => {
+      loadingSpinner.style.display = "none";
+      console.error("Error al obtener los datos:", error);
+      var tbody = document.getElementById("project-table-body");
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">No hay listas de deseos activas.</td></tr>';
+    });
+  });
+
+  function editProject() {
+    window.location.href = '/wishes'
+  }
+</script> -->
+
+<!-- <script>
+  $(document).ready(function () {
+    console.log()
+    $('#loading-spinner').show();
+
+    // Obtén el valor de userid
+    var userid = $('#userid').val();
+
     // Envía la solicitud al servidor
     $.ajax({
-        url: '/projects',
-        type: 'POST',
-        data: { userid: userid }, // Envía el valor de userid al servidor
-        success: function(data) {
-            $('#loading-spinner').hide();
-            console.log(data); // Añade este log para verificar los datos recibidos
-            if (Array.isArray(data)) {
-                var tbody = $('#project-table-body');
-                tbody.empty();
-                data.forEach(function (project) {
-                    var row = `<tr>
+      url: '/projects',
+      type: 'POST',
+      data: { userid: userid }, // Envía el valor de userid al servidor
+      success: function (data) {
+        $('#loading-spinner').hide();
+        console.log(data); // Añade este log para verificar los datos recibidos
+        if (Array.isArray(data)) {
+          var tbody = $('#project-table-body');
+          tbody.empty();
+          data.forEach(function (project) {
+            var row = `<tr>
                         <td>${project.id}</td>
                         <td>${project.usuario}</td>
                         <td>${project.nombre}</td>
@@ -162,24 +282,30 @@
                         <td>
                             <form class="d-flex" method="post">
                                 <input type="hidden" name="idProject" value="${project.id}">
-                                <button type="submit" class="btn btn-outline-primary me-3">Editar
+                                <button type="submit" class="btn btn-outline-primary me-3" onclick="editProject(${project.id})">Editar
                                     <i class="bi bi-pencil-square"></i></button>
                                 <button type="submit" class="btn btn-outline-danger">Eliminar
                                     <i class="bi bi-trash-fill"></i></button>
                             </form>
                         </td>
                     </tr>`;
-                    tbody.append(row);
-                });
-            } else {
-                console.error("La respuesta no es un array:", data);
-            }
-        },
-        error: function(xhr, status, error) {
-            $('#loading-spinner').hide();
-            console.error("Error al obtener los datos:", error);
+            tbody.append(row);
+          });
+        } else {
+          console.error("La respuesta no es un array:", data);
         }
+      },
+      error: function (xhr, status, error) {
+        $('#loading-spinner').hide();
+        console.error("Error al obtener los datos:", error);
+      }
     });
-});
-</script>
+  });
+
+  function editProject(id) {
+    window.location.href = '/wishes?idProject=' + id;
+    console.log("Id project: ", id)
+  }
+</script> -->
+
 </html>
