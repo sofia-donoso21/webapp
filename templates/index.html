@@ -103,12 +103,13 @@
     </form>
   </div>
   <hr>
-  <!-- Tabla -->
-  <div class="p-l-15 p-r-15">
+  
+  <div class="table-responsive">
+    <!-- Tabla -->
+  <!-- <div class="p-l-15 p-r-15"> -->
     <table id="mytable" class="table table-bordered table-striped">
       <thead>
         <tr>
-          <th>#</th>
           <th>Responsable</th>
           <th>Nombre</th>
           <th>Detalle</th>
@@ -126,7 +127,10 @@
       <div class="spinner-border" role="status">
       </div>
     </div>
+  <!-- </div> -->
   </div>
+
+
   {% else %}
   <span class="login100-form-title p-b-49">
     perfil_name
@@ -156,7 +160,6 @@
           data.forEach(function (project) {
             var row = document.createElement("tr");
             row.innerHTML = `
-            <td>${project.id}</td>
             <td>${project.usuario}</td>
             <td>${project.nombre}</td>
             <td>${project.descripcion}</td>
