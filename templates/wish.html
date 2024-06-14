@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,9 +9,11 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.0/font/bootstrap-icons.min.css"
         rel="stylesheet">
     <link rel="stylesheet" href="../static/styles.css">
-    <title>Lista de Deseos - {{username}}</title>
+    <title>Lista de Deseos</title>
 </head>
+
 <body>
+    {% if profileID == 1 or profileID == "1" %}
     <!-- Menu -->
     <nav class="navbar navbar-expand-lg bg-light">
         <div class="container-fluid">
@@ -50,11 +53,114 @@
             </div>
         </div>
     </nav>
+    <input type="hidden" id="perfil" name="perfil" value="{{ perfil }}">
     <br>
     <!-- Container -->
     <div class="container mt-1">
         <div class="row">
-            <div class="col-6 col-md-12 mb-12">
+            <!-- Formulario -->
+            <div class="col-md-6 mb-12">
+                <form method="POST" action="/addWish">
+                    <div class="wrap-input100">
+                        <span class="label-input100">Valor</span>
+                        <input class="input100" type="number" name="name" required>
+                        <span class="focus-input100"></span>
+                    </div>
+                    <div class="wrap-input100">
+                        <span class="label-input100">Nombre</span>
+                        <input class="input100" type="text" name="detail" required>
+                        <span class="focus-input100"></span>
+                    </div>
+                    <div class="wrap-input100">
+                        <span class="label-input100">Responsable</span>
+                        <input class="input100" type="text" name="text" required value="{{username}}" readonly>
+                        <span class="focus-input100"></span>
+                    </div>
+                    <div class="row p-t-30">
+                        <div class="row">
+                            <button class="btn btn-outline-primary btn-lg text-center" id="miBoton" name="miBoton"
+                                type="submit">AGREGAR</button>
+                        </div>
+                    </div>
+                    {% if statuscode == 200 or statuscode == '200' %}
+                    <br>
+                    <div class="row bg-success text-center" style="border-radius: 15px; padding: 15px; color: #fff">
+                        {{ statusmessage }}
+                    </div>
+                    {% endif %}
+                    {% if statuscode == 400 or statuscode == '400' %}
+                    <br>
+                    <div class="row bg-success text-center" style="border-radius: 15px; padding: 15px; color: #fff">
+                        {{ statusmessage }}
+                    </div>
+                    {% endif %}
+                    {% if statuscode == 500 or statuscode == '500' %}
+                    <br>
+                    <div class="row bg-success text-center" style="border-radius: 15px; padding: 15px; color: #fff">
+                        {{ statusmessage }}
+                    </div>
+                    {% endif %}
+                </form>
+                <div class="row p-t-20">
+                    <div class="row">
+                        <button class="btn btn-outline-danger btn-lg text-center" onclick="back()">VOLVER</button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-12">
+                <div class="table-responsive table-responsive-custom">
+                    <table id="mytable" class="table table-bordered table-striped">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Nombre</th>
+                                <th>Valor</th>
+                                <th>Accion</th>
+                            </tr>
+                        </thead>
+                        <tbody id="project-table-body" class="table-responsive">
+                        </tbody>
+                    </table>
+                    <div id="loading-spinner" class="text-center">
+                        <span>Cargando...</span>
+                        <div class="spinner-border" role="status"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- Menu -->
+    <nav class="navbar navbar-expand-lg bg-light">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">Regala Sonrisas</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false"
+                aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                </ul>
+                <form class="d-flex" method="post" action="/logout">
+                    <div id="radix-:rh0:" aria-haspopup="menu" aria-expanded="false" data-state="closed"
+                        class="group flex cursor-pointer items-center gap-1 rounded-xl py-2 px-3 text-lg font-semibold hover:bg-token-main-surface-secondary radix-state-open:bg-token-main-surface-secondary juice:text-token-text-secondary juice:rounded-lg juice:py-1.5 overflow-hidden whitespace-nowrap">
+                        <div class="juice:text-token-text-secondary"><span
+                                class="text-token-text-secondary">{{username}}</span>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-outline-danger">Salir
+                        <i class="bi bi-box-arrow-right"></i></button>
+                </form>
+            </div>
+        </div>
+    </nav>
+    <input type="hidden" id="perfil" name="perfil" value="{{ perfil }}">
+    <br>
+    <!-- Container -->
+    <div class="container mt-1">
+        <div class="row">
+            <div class="col-md-12 mb-12">
                 <div class="table-responsive table-responsive-custom">
                     <table id="mytable" class="table table-bordered table-striped">
                         <thead>
@@ -75,100 +181,95 @@
                     </div>
                 </div>
             </div>
-            <!-- Formulario -->
-            <form class="col-6 col-md-6 mb-12" method="POST" action="/addWish">
-                <div class="wrap-input100">
-                    <span class="label-input100">Valor</span>
-                    <input class="input100" type="number" name="name" required>
-                    <span class="focus-input100"></span>
-                </div>
-                <div class="wrap-input100">
-                    <span class="label-input100">Nombre</span>
-                    <input class="input100" type="text" name="detail" required>
-                    <span class="focus-input100"></span>
-                </div>
-                <div class="wrap-input100">
-                    <span class="label-input100">Responsable</span>
-                    <input class="input100" type="text" name="text" required value="{{username}}" readonly>
-                    <span class="focus-input100"></span>
-                </div>
-                <div class="row">
-                    <button class="btn btn-outline-primary btn-lg text-center" id="miBoton" name="miBoton"
-                        type="submit">AGREGAR</button>
-                </div>
-                {% if statuscode == 200 or statuscode == '200' %}
-                <br>
-                <div class="row bg-success text-center" style="border-radius: 15px; padding: 15px; color: #fff">
-                    {{ statusmessage }}
-                </div>
-                {% endif %}
-                {% if statuscode == 400 or statuscode == '400' %}
-                <br>
-                <div class="row bg-success text-center" style="border-radius: 15px; padding: 15px; color: #fff">
-                    {{ statusmessage }}
-                </div>
-                {% endif %}
-                {% if statuscode == 500 or statuscode == '500' %}
-                <br>
-                <div class="row bg-success text-center" style="border-radius: 15px; padding: 15px; color: #fff">
-                    {{ statusmessage }}
-                </div>
-                {% endif %}
-            </form>
+
         </div>
     </div>
+    {% endif %}
 </body>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         var loadingSpinner = document.getElementById("loading-spinner");
-        loadingSpinner.style.display = "block";
-        fetch('/validateWishes', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-        })
-            .then(response => response.json())
-            .then(data => {
-                loadingSpinner.style.display = "none";
-                console.log(data); // Añade este log para verificar los datos recibidos
-                if (Array.isArray(data)) {
-                    var tbody = document.getElementById("project-table-body");
-                    tbody.innerHTML = '';
-                    data.forEach(function (project) {
-                        var row = document.createElement("tr");
-                        row.innerHTML = `
-              <tr>
-                <td>${project.id}</td>
-                <td>${project.detalle}</td>
-                <td>${project.nombre}</td>
-                <td>
-                    <form class="d-flex" method="post" action="/deleteWish">
-                        <input type="hidden" name="idProject" value="${project.id}">
-                        <button type="submit" class="btn btn-outline-danger">Eliminar
-                            <i class="bi bi-trash-fill"></i></button>
-                    </form>
-                </td>
-            </tr>`;
-                        tbody.appendChild(row);
+        var perfilInput = document.getElementById("perfil");
+        var perfil = perfilInput.value;
+        if (perfil) {
+            loadingSpinner.style.display = "block";
+            if (loadingSpinner) {
+                fetch('/validateWishes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        loadingSpinner.style.display = "none";
+                        if (Array.isArray(data)) {
+                            var tbody = document.getElementById("project-table-body");
+                            tbody.innerHTML = '';
+                            data.forEach(function (project) {
+                                var row = document.createElement("tr");
+                                if (perfil == 1) {
+                                    row.innerHTML = `
+                            <tr>
+                                <td>${project.id}</td>
+                                <td>${project.detalle}</td>
+                                <td>${project.nombre}</td>
+                                <td>
+                                    <form class="d-flex" method="post" action="/deleteWish">
+                                        <input type="hidden" name="idProject" value="${project.id}">
+                                        <button type="submit" class="btn btn-outline-danger">Eliminar
+                                            <i class="bi bi-trash-fill"></i></button>
+                                    </form>
+                                </td>
+                            </tr>`;
+
+                                } else {
+                                    row.innerHTML = `
+                            <tr>
+                                <td>${project.id}</td>
+                                <td>${project.detalle}</td>
+                                <td>${project.nombre}</td>
+                                <td>
+                                    <form class="d-flex" method="post">
+                                        <input type="hidden" name="idProject" value="${project.id}">
+                                        <button type="submit" class="btn btn-outline-danger">Apoyar
+                                            <i class="bi bi-box2-heart"></i></button>
+                                    </form>
+                                </td>
+                            </tr>`;
+
+                                }
+
+                                tbody.appendChild(row);
+                            });
+                        } else {
+                            var tbody = document.getElementById("project-table-body");
+                            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">No hay listas de deseos activas.</td></tr>';
+                        }
+                    })
+                    .catch(error => {
+                        loadingSpinner.style.display = "none";
+                        var tbody = document.getElementById("project-table-body");
+                        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">No hay listas de deseos activas.</td></tr>';
                     });
-                } else {
-                    console.error("La respuesta no es un array:", data);
-                    var tbody = document.getElementById("project-table-body");
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">No hay listas de deseos activas.</td></tr>';
-                }
-            })
-            .catch(error => {
-                loadingSpinner.style.display = "none";
-                console.error("Error al obtener los datos:", error);
-                var tbody = document.getElementById("project-table-body");
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">No hay listas de deseos activas.</td></tr>';
-            });
+
+            } else {
+                console.error("Ocurrio un error al cargar los recursos.")
+            }
+        } else {
+            loadingSpinner.style.display = "none";
+            var tbody = document.getElementById("project-table-body");
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">No hay listas de deseos activas.</td></tr>';
+        }
+
     });
     function editProject(id) {
         window.location.href = '/wishes?idProject=' + id;
-        console.log("Id project: ", id)
+    }
+    function back() {
+        window.location.href = '/'
     }
 </script>
+
 </html>
