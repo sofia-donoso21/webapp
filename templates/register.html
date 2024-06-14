@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,32 +8,26 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
   <link rel="stylesheet" href="../static/styles.css">
 </head>
-
 <body>
   <div class="container-login100" style="background-image: url(../static/img/bg-01.jpg);">
-
     <div class="wrap-login100 p-l-55 p-r-55 p-t-40 p-b-40">
       <form class="contact100-form" method="post" action="/validate">
         {% if message %}
         <span class="p-3 mb-2 bg-danger text-white input100">
           Faltan datos por completar
         </span>
-
         {% else %}
         <span class="p-3 mb-2 bg-info text-white input100">
           Completa tus datos
         </span>
         {% endif %}
-
         <div class="wrap-input100 validate-input" data-validate="Name is required">
-          <!-- <input class="input100" type="text" id="rut" name="rut" placeholder="Rut"> -->
           <input class="input100" type="text" id="rut" name="rut" placeholder="Ingresa tu RUT">
           <span class="focus-input100"></span>
           <span class="symbol-input100">
             <i class="fa fa-user" aria-hidden="true"></i>
           </span>
         </div>
-
         <div class="wrap-input100 validate-input" data-validate="Name is required">
           <input class="input100" type="text" name="name" placeholder="Nombre">
           <span class="focus-input100"></span>
@@ -42,7 +35,6 @@
             <i class="fa fa-user" aria-hidden="true"></i>
           </span>
         </div>
-
         <div class="wrap-input100 validate-input" data-validate="Name is required">
           <input class="input100" type="text" name="app1" placeholder="Apellido Paterno">
           <span class="focus-input100"></span>
@@ -50,7 +42,6 @@
             <i class="fa fa-user" aria-hidden="true"></i>
           </span>
         </div>
-
         <div class="wrap-input100 validate-input" data-validate="Name is required">
           <input class="input100" type="text" name="app2" placeholder="Apellido Materno">
           <span class="focus-input100"></span>
@@ -58,8 +49,6 @@
             <i class="fa fa-user" aria-hidden="true"></i>
           </span>
         </div>
-
-
         <div class="wrap-input100 validate-input" data-validate="Name is required">
           <select class="input100" name="profile" id="profile">
             <option selected value="0">Selecciona tu perfil</option>
@@ -71,13 +60,11 @@
             <i class="fa fa-user" aria-hidden="true"></i>
           </span>
         </div>
-
         <div class="container-contact100-form-btn">
           <button class="contact100-form-btn" type="submit">
             CONTINUAR
           </button>
         </div>
-
       </form>
     </div>
   </div>
@@ -99,5 +86,4 @@
   integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js"
   integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
-
 </html>
