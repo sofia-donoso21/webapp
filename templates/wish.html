@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,7 +10,6 @@
     <link rel="stylesheet" href="../static/styles.css">
     <title>Lista de Deseos</title>
 </head>
-
 <body>
     {% if profileID == 1 or profileID == "1" %}
     <!-- Menu -->
@@ -32,7 +30,7 @@
                         </a>
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="#">Usuario</a></li>
-                            <li><a class="dropdown-item" href="#">Mercado Libre</a></li>
+                            <li><a class="dropdown-item" href="#">Datos de pago</a></li>
                             <li>
                                 <hr class="dropdown-divider">
                             </li>
@@ -53,7 +51,7 @@
             </div>
         </div>
     </nav>
-    <input type="hidden" id="perfil" name="perfil" value="{{ perfil }}">
+    <input type="hidden" id="perfil" name="perfil" value="{{ profileID }}">
     <br>
     <!-- Container -->
     <div class="container mt-1">
@@ -155,7 +153,7 @@
             </div>
         </div>
     </nav>
-    <input type="hidden" id="perfil" name="perfil" value="{{ perfil }}">
+    <input type="hidden" id="perfil" name="perfil" value="{{ profileID }}">
     <br>
     <!-- Container -->
     <div class="container mt-1">
@@ -174,102 +172,91 @@
                         <tbody id="project-table-body" class="table-responsive">
                         </tbody>
                     </table>
-
                     <div id="loading-spinner" class="text-center">
                         <span>Cargando...</span>
                         <div class="spinner-border" role="status"></div>
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
     {% endif %}
 </body>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        var loadingSpinner = document.getElementById("loading-spinner");
-        var perfilInput = document.getElementById("perfil");
-        var perfil = perfilInput.value;
-        if (perfil) {
-            loadingSpinner.style.display = "block";
-            if (loadingSpinner) {
-                fetch('/validateWishes', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        loadingSpinner.style.display = "none";
-                        if (Array.isArray(data)) {
-                            var tbody = document.getElementById("project-table-body");
-                            tbody.innerHTML = '';
-                            data.forEach(function (project) {
-                                var row = document.createElement("tr");
-                                if (perfil == 1) {
-                                    row.innerHTML = `
-                            <tr>
-                                <td>${project.id}</td>
-                                <td>${project.detalle}</td>
-                                <td>${project.nombre}</td>
-                                <td>
-                                    <form class="d-flex" method="post" action="/deleteWish">
-                                        <input type="hidden" name="idProject" value="${project.id}">
-                                        <button type="submit" class="btn btn-outline-danger">Eliminar
-                                            <i class="bi bi-trash-fill"></i></button>
-                                    </form>
-                                </td>
-                            </tr>`;
-
-                                } else {
-                                    row.innerHTML = `
-                            <tr>
-                                <td>${project.id}</td>
-                                <td>${project.detalle}</td>
-                                <td>${project.nombre}</td>
-                                <td>
-                                    <form class="d-flex" method="post">
-                                        <input type="hidden" name="idProject" value="${project.id}">
-                                        <button type="submit" class="btn btn-outline-danger">Apoyar
-                                            <i class="bi bi-box2-heart"></i></button>
-                                    </form>
-                                </td>
-                            </tr>`;
-
-                                }
-
-                                tbody.appendChild(row);
-                            });
-                        } else {
-                            var tbody = document.getElementById("project-table-body");
-                            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">No hay listas de deseos activas.</td></tr>';
-                        }
-                    })
-                    .catch(error => {
-                        loadingSpinner.style.display = "none";
-                        var tbody = document.getElementById("project-table-body");
-                        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">No hay listas de deseos activas.</td></tr>';
-                    });
-
+  document.addEventListener("DOMContentLoaded", function () {
+    var perfilInput = document.getElementById("perfil");
+    var perfil = perfilInput.value;
+    console.error(perfil)
+    if (perfil) {
+      var loadingSpinner = document.getElementById("loading-spinner");
+      if (loadingSpinner) {
+        loadingSpinner.style.display = "block";
+        fetch('/validateWishes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+        })
+          .then(response => response.json())
+          .then(data => {
+            loadingSpinner.style.display = "none";
+            if (Array.isArray(data)) {
+              var tbody = document.getElementById("project-table-body");
+              tbody.innerHTML = '';
+              data.forEach(function (project) {
+                var row = document.createElement("tr");
+                if (perfil == 1) {
+                  row.innerHTML = `
+                <td>${project.id}</td>
+                <td>${project.detalle}</td>
+                <td>${project.nombre}</td>
+                <td>
+                  <form class="d-flex" method="post" action="/deleteProject">
+                    <input type="hidden" name="idProject" value="${project.id}">
+                    <button type="submit" class="btn btn-outline-danger">Eliminar
+                      <i class="bi bi-trash-fill"></i></button>
+                  </form>
+                </td>`;
+                } else {
+                  row.innerHTML = `
+                <td>${project.id}</td>
+                <td>${project.detalle}</td>
+                <td>${project.nombre}</td>
+                <td>
+                  <form class="d-flex" method="post" action="/payment">
+                    <input type="hidden" name="idProject" value="${project.id}">
+                    <button style="background-color: pink;" type="submit" class="btn btn-outline">Apoyar
+                      <i class="bi bi-box2-heart"></i></button>
+                  </form>
+                </td>`;
+                }
+                tbody.appendChild(row);
+              });
             } else {
-                console.error("Ocurrio un error al cargar los recursos.")
+              var tbody = document.getElementById("project-table-body");
+              tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">No hay listas de deseos activas.</td></tr>';
             }
-        } else {
+          })
+          .catch(error => {
             loadingSpinner.style.display = "none";
             var tbody = document.getElementById("project-table-body");
             tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">No hay listas de deseos activas.</td></tr>';
-        }
-
-    });
-    function editProject(id) {
-        window.location.href = '/wishes?idProject=' + id;
+          });
+      } else {
+        console.error("Ocurrio un error al cargar los recursos.");
+      }
+    } else {
+      loadingSpinner.style.display = "none";
+      var tbody = document.getElementById("project-table-body");
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">No hay listas de deseos activas.</td></tr>';
     }
-    function back() {
+  });
+  function editProject(id) {
+    window.location.href = '/wishes?idProject=' + id;
+  }
+  function back(){
         window.location.href = '/'
     }
 </script>
-
 </html>
