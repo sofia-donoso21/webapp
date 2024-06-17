@@ -363,10 +363,10 @@ def save_data():
 @app.route('/pay', methods=['GET', 'POST'])
 def pay():
     if request.method == 'POST':
-        email=session.get('MP_email')
-        valor = session.get('MP_valor')
+        email="fonttjean@gmail.com"
+        valor = 12345
         detalle = "Pago Regala Sonrisas"
-        cuenta = session.get('MP_cuenta') 
+        cuenta = 12345
         try:
             preference_data = {
                 "items": [
