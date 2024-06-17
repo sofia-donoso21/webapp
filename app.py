@@ -1,12 +1,15 @@
 from collections import OrderedDict
 from dotenv import load_dotenv, dotenv_values
-from flask import Flask, render_template, request, redirect, session, jsonify
+from flask import Flask, render_template, request, redirect, session, jsonify, url_for
 import hashlib
 import pymysql.cursors
 from flask_cors import CORS
+import mercadopago
+from requests_oauthlib import OAuth2Session
 
 app = Flask(__name__)
 app.secret_key = 'b1f21c5f7e90b9e6d3c3b12d916c6c82a8c0a72c97bdf8c918e3028b73cbb9a5'
+sdk = mercadopago.SDK('TEST-3918562655854914-052819-bc1fa35b8d8c26ae482081c57f21b3c0-486217989')
 CORS(app)
 
 class funciones:
@@ -34,36 +37,49 @@ class funciones:
         sha256_hash.update(string_bytes)
         hash_encriptado = sha256_hash.hexdigest()
         return hash_encriptado
+    
 
-####################################################################################################################
-######################################################## OK
-####################################################################################################################
+# class mercadoPago:
+@app.route('/success')
+def success():
+    return "¡Pago exitoso!"
+
+@app.route('/failure')
+def failure():
+    return "El pago falló. Intenta de nuevo."
+
+@app.route('/pending')
+def pending():
+    return "El pago está pendiente. Espera la confirmación."
+
+# Base
 @app.route('/')
 def index():
     if 'email' in session:
         connection = funciones.get_db_connection()
         connection.begin()
-        with connection.cursor() as cursor:
-            userid=session.get('userid')
-            print("userid: ", userid)
-            cursor.execute(f"SELECT perfil, rut, CONCAT(nombres,' ', ap_pat, ' ', ap_mat) username, CASE perfil WHEN 1 THEN 'Beneficiario' WHEN 2 THEN 'Auspiciador' ELSE '' END  perfil_name FROM usuario WHERE id={userid}")
-            query = cursor.fetchone()
-            perfil=query['perfil']
-            perfil_name=query['perfil_name']
-            rut=query['rut']
-            username=query['username']
-            session['name']=username
-            session['profile_id']=perfil
-            session['profile']=perfil_name
-        return render_template('index.html', userid=userid, perfil=perfil, perfil_name=perfil_name, rut=rut, username=username) 
+        try:
+            with connection.cursor() as cursor:
+                userid=session.get('userid')
+                cursor.execute(f"SELECT perfil, rut, CONCAT(nombres,' ', ap_pat, ' ', ap_mat) username, CASE perfil WHEN 1 THEN 'Beneficiario' WHEN 2 THEN 'Auspiciador' ELSE '' END  perfil_name FROM usuario WHERE id={userid}")
+                query = cursor.fetchone()
+                perfil=query['perfil']
+                perfil_name=query['perfil_name']
+                rut=query['rut']
+                username=query['username']
+                session['name']=username
+                session['profile_id']=perfil
+                session['profile']=perfil_name
+                session['rut']=rut
+                return render_template('index.html', userid=userid, perfil=perfil, perfil_name=perfil_name, rut=rut, username=username) 
+        except Exception as e:
+            return render_template('login.html')
+        finally:
+            if 'connection' in locals():
+                connection.close()
     return render_template('login.html')
     
-    
-@app.route('/logout', methods=['GET', 'POST'])
-def logout():
-    session.clear()
-    return render_template('login.html')
-
+# Autentificacion 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     email = request.form['email']
@@ -79,14 +95,9 @@ def login():
             message = result_main_valid['message']
             userid=result_main_valid['userid']
             if code == 200:
+                session.clear()
                 session['email'] = email
                 session['userid'] = userid
-                cursor.execute(f"SELECT perfil, rut, CONCAT(nombres,' ', ap_pat, ' ', ap_mat) username, CASE perfil WHEN 1 THEN 'Beneficiario' WHEN 2 THEN 'Auspiciador' ELSE '' END  perfil_name FROM usuario WHERE id={userid}")
-                query = cursor.fetchone()
-                perfil=query['perfil']
-                perfil_name=query['perfil_name']
-                rut=query['rut']
-                username=query['username']
                 return redirect('/')
             else:
                 return render_template('login.html', alert_message=message)
@@ -98,95 +109,15 @@ def login():
         if 'connection' in locals():
             connection.close()
 
+@app.route('/logout', methods=['GET', 'POST'])
+def logout():
+    session.clear()
+    return render_template('login.html')
 
-@app.route('/projects', methods=['GET', 'POST'])
-def projects():
-    userid = session.get('userid')
-    if not userid:
-        print("Usuario no autentificado")
-        return jsonify({"message": "Usuario no autenticado"}), 401  # Unauthorized
-    try:
-        connection = funciones.get_db_connection()
-        with connection.cursor() as cursor:
-            cursor.callproc('GET_PROYECTOS_BY_USERID', (userid,))
-            data = cursor.fetchall()
-            print("Python data: ", data)
-            if not data:
-                return jsonify({"message": "No hay proyectos disponibles"}), 404
-            return jsonify(data), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        if 'connection' in locals():
-            connection.close()
-
+# Usuario
 @app.route('/register', methods=['GET', 'POST'])
 def register(): 
     return render_template('register.html')
-
-
-@app.route('/wishes', methods=['GET', 'POST'])
-def wishes():
-    idProject = request.args["idProject"]
-    session['idProject']=idProject
-    return render_template("wish.html", username=session.get('name'), profileName=session.get('profile'), profileID=session.get('profile_id'))
-
-
-@app.route('/addProject', methods=['GET', 'POST'])
-def addProject():
-    userid = session.get('userid')
-    name = request.form['name']
-    descripcion = request.form['descripcion']
-    print("Userid: ", userid)
-    try:
-        connection = funciones.get_db_connection()
-        connection.begin()
-        with connection.cursor() as cursor: 
-            cursor.callproc('SET_PROYECTO', (userid, name, descripcion, 0, ''))
-            cursor.execute("SELECT @_SET_PROYECTO_3 AS code, @_SET_PROYECTO_4 AS message")
-            result = cursor.fetchone()
-            code = result['code']
-            message = result['message']
-            print("Add project message: ", message)
-            if code == 200:
-                return redirect('/')
-    except Exception as e:
-        if 'connection' in locals():
-            connection.rollback()
-        return redirect('/')
-    finally:
-        if 'connection' in locals():
-            connection.close()
-
-####################################################################################################################
-######################################################## NO OK
-####################################################################################################################
-
-@app.route('/validateWishes', methods=['GET', 'POST'])
-def validateWishes():
-    idProject = session.get('idProject')
-    print("idProject Validate wishes: ", idProject)
-    if not idProject:
-        return redirect('/')
-    try:
-        connection = funciones.get_db_connection()
-        with connection.cursor() as cursor:
-            cursor.execute(f'SELECT A.id, CONCAT(B.nombres, " ", B.ap_pat, " ", B.ap_mat) usuario, A.nombre, A.detalle FROM deseo A LEFT JOIN usuario B ON A.id_usuario=B.id WHERE A.id_proyecto={idProject}')
-            data = cursor.fetchall()
-            print("Data wishes", data)
-            if not data:
-                return jsonify({"message": "No hay deseos disponibles"}), 400
-            return jsonify(data), 200  # OK
-    except Exception as e:
-        print("Except validate wishes: ", e)
-        if 'connection' in locals():
-            connection.rollback()
-        return jsonify({"error": str(e)}), 200
-    finally:
-        if 'connection' in locals():
-            connection.close()
-
-
 
 @app.route('/validate', methods=['GET', 'POST'])
 def registerPage(): 
@@ -225,20 +156,80 @@ def user():
         profile = session.get('dataUser', {}).get('profile')
         with connection.cursor() as cursor:
             cursor.callproc('CREATE_USER', (rut, email, psw, name, app1, app2, profile, 0, ''))
+            # @@TODO: Falta validar en el SP que el rut y el email no exista
             cursor.execute("SELECT @_CREATE_USER_7 AS code, @_CREATE_USER_8 AS message")
-            return render_template('login.html')
+            result = cursor.fetchone()
+            code = result['code']
+            if code == 200:
+                session.clear()
+                return redirect('/')
+            else:
+                return render_template('auth-gen.html', message='Ocurrio un error al crear su usuario. Intente mas tarde.')
     except Exception as e:
-            print("Error: ", e)
+            if "Duplicate entry" in str(e):
+                return render_template('auth-gen.html', message='El usuario ingresado ya existe.')
             if 'connection' in locals():
                 connection.rollback()
-            return render_template('auth-gen.html', alert_message='Ocurrio un error al autentificar al usuario. Intente mas tarde.')
+            return render_template('auth-gen.html', message='Ocurrio un error al crear su usuario. Intente mas tarde.')
+    finally:
+        if 'connection' in locals():
+            connection.close()
+
+# Proyectos
+@app.route('/projects', methods=['GET', 'POST'])
+def projects():
+    userid = session.get('userid')
+    profile_id=session.get('profile_id')
+    if not userid:
+        return jsonify({"message": "Usuario no autenticado"}), 401  # Unauthorized
+    try:
+        connection = funciones.get_db_connection()
+        with connection.cursor() as cursor:
+            if profile_id == 2:
+                cursor.callproc('GET_PROYECTOS')
+                data = cursor.fetchall()
+                if not data:
+                    return jsonify({"message": "No hay proyectos disponibles"}), 404
+                return jsonify(data), 200
+            else:
+                cursor.callproc('GET_PROYECTOS_BY_USERID', (userid,))
+                data = cursor.fetchall()
+                if not data:
+                    return jsonify({"message": "No hay proyectos disponibles"}), 404
+                return jsonify(data), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if 'connection' in locals():
+            connection.close()
+
+@app.route('/addProject', methods=['GET', 'POST'])
+def addProject():
+    userid = session.get('userid')
+    name = request.form['name']
+    descripcion = request.form['descripcion']
+    try:
+        connection = funciones.get_db_connection()
+        connection.begin()
+        with connection.cursor() as cursor: 
+            cursor.callproc('SET_PROYECTO', (userid, name, descripcion, 0, ''))
+            cursor.execute("SELECT @_SET_PROYECTO_3 AS code, @_SET_PROYECTO_4 AS message")
+            result = cursor.fetchone()
+            code = result['code']
+            message = result['message']
+            if code == 200:
+                return redirect('/')
+    except Exception as e:
+        if 'connection' in locals():
+            connection.rollback()
+        return redirect('/')
     finally:
         if 'connection' in locals():
             connection.close()
 
 @app.route('/deleteProject', methods=['GET', 'POST'])
 def deleteProject():
-    idProject = request.form['idProject']
+    idProject=request.form['idProject']
     try:
         connection = funciones.get_db_connection()
         connection.begin()
@@ -254,10 +245,34 @@ def deleteProject():
         if 'connection' in locals():
             connection.close()
 
+# Items
+@app.route('/wishes', methods=['GET', 'POST'])
+def wishes():
+    idProject = request.args["idProject"]
+    session['idProject']=idProject
+    return render_template("wish.html", username=session.get('name'), profileName=session.get('profile'), profileID=session.get('profile_id'))
 
-
-
-
+@app.route('/validateWishes', methods=['GET', 'POST'])
+def validateWishes():
+    idProject = session.get('idProject')
+    if not idProject:
+        return redirect('/')
+    try:
+        connection = funciones.get_db_connection()
+        with connection.cursor() as cursor:
+            cursor.execute(f'SELECT A.id, CONCAT(B.nombres, " ", B.ap_pat, " ", B.ap_mat) usuario, A.nombre, A.detalle FROM deseo A LEFT JOIN usuario B ON A.id_usuario=B.id WHERE A.id_proyecto={idProject}')
+            data = cursor.fetchall()
+            print(data)
+            if not data:
+                return jsonify({"message": "No hay deseos disponibles"}), 400
+            return jsonify(data), 200  # OK
+    except Exception as e:
+        if 'connection' in locals():
+            connection.rollback()
+        return jsonify({"error": str(e)}), 200
+    finally:
+        if 'connection' in locals():
+            connection.close()
 
 @app.route('/addWish', methods=['GET', 'POST'])
 def addWish():
@@ -275,13 +290,113 @@ def addWish():
             message=result['_MESS']
             return render_template('wish.html', username=session.get('name'), profileName=session['profile'], profileID=session['profile_id'], statuscode=code, statusmessage=message)
     except Exception as e:
-        print(e)
         if 'connection' in locals():
             connection.rollback()
         return render_template('wish.html', username=session.get('name'), profileName=session['profile'], profileID=session['profile_id'])
     finally:
         if 'connection' in locals():
             connection.close()
-            
+
+@app.route('/payment', methods=['GET', 'POST'])
+def payment():
+    if request.method == "POST":
+        cuenta=12345
+        email='fonttjean@gmail.com'
+        valor=5
+        session['MP_cuenta']=cuenta
+        session['MP_email']=email
+        session['MP_valor']=valor
+        return render_template('payment.html', username=session.get('name'), profileName=session['profile'], profileID=session['profile_id'], cuenta=cuenta, email=email, valor=valor)
+    elif request.method == "GET":
+        try:
+            connection = funciones.get_db_connection()
+            connection.begin()
+            userid=session.get('userid')
+            # account=request.form['cuenta']
+            # email=request.form['email']
+            # code=0
+            # message=""
+            with connection.cursor() as cursor:
+                cursor.execute(f"SELECT numero FROM cuenta WHERE id_usuario={userid}")
+                data = cursor.fetchone()
+                if not data:
+                    return render_template("payment.html", code=201, email=session.get('email'), rut=session.get('rut'))
+                else:
+                    account=data['numero']
+                    return render_template("payment.html", code=200, email=session.get('email'), rut=session.get('rut'), cuenta=account)
+        except Exception as e:
+            print(e)
+            if 'connection' in locals():
+                connection.rollback()
+            return render_template("payment.html")
+        finally:
+            if 'connection' in locals():
+                connection.close()
+    return redirect('/')
+
+
+@app.route('/save_data', methods=['GET', 'POST'])
+def save_data():
+    if request.method == 'POST':
+        try:
+            connection = funciones.get_db_connection()
+            connection.begin()
+            userid=session.get('userid')
+            account=request.form['cuenta']
+            email=request.form['email']
+            code=0
+            message=""
+            with connection.cursor() as cursor:
+                cursor.callproc("CREATE_ACCOUNT", (userid, account, email, code, message))
+                result=cursor.fetchone()
+                print("Resultado: ", result)
+        except Exception as e:
+            print(e)
+            if 'connection' in locals():
+                connection.rollback()
+            return render_template("payment.html")
+        finally:
+            if 'connection' in locals():
+                connection.close()
+    return render_template("payment.html")   
+
+@app.route('/pay', methods=['GET', 'POST'])
+def pay():
+    if request.method == 'POST':
+        email=session.get('MP_email')
+        valor = session.get('MP_valor')
+        detalle = "Pago Regala Sonrisas"
+        cuenta = session.get('MP_cuenta') 
+        try:
+            preference_data = {
+                "items": [
+                    {
+                        "title": detalle,
+                        "quantity": 1,
+                        "unit_price": valor
+                    }
+                ],
+                "payer": {
+                    "name": cuenta,
+                    "email": email
+                },
+                "back_urls": {
+                    "success": url_for('index', _external=True),
+                    "failure": url_for('failure', _external=True),
+                    "pending": url_for('pending', _external=True)
+                },
+                "auto_return": "approved"
+            }
+
+            preference_response = sdk.preference().create(preference_data)
+            preference = preference_response["response"]
+            return redirect(preference['init_point'])
+        except Exception as e:
+            print(e)
+            return jsonify({"error": str(e)}), 500
+    return jsonify({"error": "Método no permitido"}), 405
+
+
+
 if __name__ == '__main__':
     funciones.config()
