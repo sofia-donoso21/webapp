@@ -225,7 +225,9 @@
                 <td>${project.nombre}</td>
                 <td>
                   <form class="d-flex" method="post" action="/pay">
-                    <input type="hidden" name="idProject" value="${project.id}">
+                    <input type="hidden" name="idDeseo" value="${project.id}">
+                    <input type="hidden" name="detalle" value="${project.detalle}">
+                    <input type="hidden" name="nombre" value="${project.nombre}">
                     <button style="background-color: pink;" type="submit" class="btn btn-outline">Apoyar
                       <i class="bi bi-box2-heart"></i></button>
                   </form>
