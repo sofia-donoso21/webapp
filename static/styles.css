@@ -90,7 +90,7 @@ textarea {
 }
 
 .table-responsive-custom {
-  height: 400px; /* Ajusta la altura según tus necesidades */
+  height: 50; /* Ajusta la altura según tus necesidades */
   overflow-y: auto; /* Agrega scroll vertical si es necesario */
 }
 
@@ -639,6 +639,38 @@ button:hover {
   background-size: cover;
 }
 
+.container-payment {
+  width: 100%;
+  min-height: 100%;
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  padding: 15px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+}
+
+.container-index {
+  width: 100%;
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -moz-box;
+  display: -ms-flexbox;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+}
+
 
 .container-register {
   width: 100%;
@@ -659,6 +691,13 @@ button:hover {
 
 .wrap-login100 {
   width: 500px;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.wrap-index {
+  width: 80%;
   background: #fff;
   border-radius: 10px;
   overflow: hidden;
