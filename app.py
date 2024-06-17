@@ -260,7 +260,7 @@ def validateWishes():
     try:
         connection = funciones.get_db_connection()
         with connection.cursor() as cursor:
-            cursor.execute(f'SELECT A.id, CONCAT(B.nombres, " ", B.ap_pat, " ", B.ap_mat) usuario, A.nombre, A.detalle FROM deseo A LEFT JOIN usuario B ON A.id_usuario=B.id WHERE A.id_proyecto={idProject}')
+            cursor.execute(f'SELECT A.id, CONCAT(B.nombres, " ", B.ap_pat, " ", B.ap_mat) usuario, A.nombre, A.detalle FROM deseo A LEFT JOIN usuario B ON A.id_usuario=B.id WHERE A.id_proyecto={idProject} AND A.estado = "0"')
             data = cursor.fetchall()
             print(data)
             if not data:
@@ -363,9 +363,10 @@ def save_data():
 @app.route('/pay', methods=['GET', 'POST'])
 def pay():
     if request.method == 'POST':
+        idDeseo=int(request.form['idDeseo'])
         email="fonttjean@gmail.com"
-        valor = 12345
-        detalle = "Pago Regala Sonrisas"
+        valor = int(request.form['nombre'])
+        detalle = request.form['detalle']
         cuenta = 12345
         try:
             preference_data = {
@@ -390,7 +391,23 @@ def pay():
 
             preference_response = sdk.preference().create(preference_data)
             preference = preference_response["response"]
-            return redirect(preference['init_point'])
+            returnStatement=str(preference["auto_return"])
+            if ( returnStatement == 'approved' ):
+                try:
+                    connection = funciones.get_db_connection()
+                    connection.begin()
+                    with connection.cursor() as cursor:
+                        cursor.execute(f"UPDATE deseo SET estado='1' WHERE id={idDeseo}")
+                        connection.commit()
+                        return redirect(preference['init_point'])
+                except Exception as err:
+                    print(err)
+                    if 'connection' in locals():
+                        connection.rollback()
+                    return redirect("/")
+                finally:
+                    if 'connection' in locals():
+                        connection.close()
         except Exception as e:
             print(e)
             return jsonify({"error": str(e)}), 500
